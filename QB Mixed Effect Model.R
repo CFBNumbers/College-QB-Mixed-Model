@@ -143,5 +143,64 @@ tt<-tt %>% filter(
   abs(t_stat) > z
 ) 
 
+#This section is entirely data viz for the 2016-2020 QB draft prospects
+#Yes I know this is a bad way to do this but...... it worked lol 
+
+tt <- tt %>% filter(level %in% c("Jared Goff", "Dak Prescott", 
+                                 "Deshaun Watson", "Patrick Mahomes", 
+                                 "Mitch Trubisky", "Baker Mayfield", 
+                                 "Josh Rosen", "Lamar Jackson", "Sam Darnold", 
+                                 "Kyler Murray", "Drew Lock", "Dwayne Haskins", 
+                                 "Daniel Jones", "Jalen Hurts", "Tua Tagovailoa", 
+                                 "Justin Herbert", "Joe Burrow", 
+                                 "Justin Fields", "Trevor Lawrence", "Zach Wilson", 
+                                 "Mac Jones", "Josh Allen"))
+
+tt<-tt[order(-tt$estimate),]
+tt<-head(tt,n=10)
+z <- 1.282
+
+teams <- epa_data %>% ungroup() %>% select(name, offense_play) %>% 
+  filter(name %in% c("Jared Goff", "Dak Prescott", 
+                     "Deshaun Watson", "Patrick Mahomes", 
+                     "Mitch Trubisky", "Baker Mayfield", 
+                     "Josh Rosen", "Lamar Jackson", "Sam Darnold", 
+                     "Kyler Murray", "Drew Lock", "Dwayne Haskins", 
+                     "Daniel Jones", "Jalen Hurts", "Tua Tagovailoa", 
+                     "Justin Herbert", "Joe Burrow", 
+                     "Justin Fields", "Trevor Lawrence", "Zach Wilson", 
+                     "Mac Jones", "Josh Allen"),
+         offense_play != "Navy") %>% distinct() %>% arrange(name)
+#This gets rid of previous transfer locations (Yes, Georiga went with Jake Fromm)
+teams <- teams[-c(7,10, 14, 17), ] 
+
+tt <- tt %>% left_join(teams, by = c("QB" = "name"))
+cfblogos <- read.csv("https://raw.githubusercontent.com/spfleming/CFB/master/logos.csv")
+tt <- tt %>% left_join(cfblogos, by = c("offense_play" = "school"))
+
+tt<-tt[order(tt$estimate),]
+tt %>%
+  ggplot(aes(x=factor(QB, level = QB),estimate)) + 
+  geom_point()+
+  geom_pointrange(aes(ymin=estimate - z*std.error,
+                      ymax=estimate + z*std.error), 
+                  colour = tt$color)+
+  coord_flip() + 
+  labs(y = "Random Effects Estimate | EPA/Play",
+       x = "Quarterback", 
+       subtitle = "Data: 2014-2020, Passes & Rushes", 
+       caption = "Model Code: @adrian_cadem | Figure: @CFBNumbers | Data: @CFB_Data with #cfbscrapR",
+       title = "QB Rankings Via Mixed Effects Model") + 
+  theme_minimal() +
+  theme(
+    axis.text = element_text(size = 10),
+    axis.title.x = element_text(size = 12),
+    axis.title.y = element_text(size = 12),
+    strip.text = element_text(size = 10), 
+    plot.title = element_text(size = 12, hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(size = 9, hjust = 0.5),
+    plot.caption = element_text(size = 8, hjust = 0.5))
+
+ggsave("MixedEffectsNew.png", dpi = 600)
 
 
